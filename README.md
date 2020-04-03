@@ -1,7 +1,7 @@
 <br/>
 <div id="pm-logo" align="center">
     <br />
-    <img src="https://github.com/rodrigososacar/process-manager/blob/master/logo/process-manager-logo.png?sanitize=true" alt="PM Logo" width="300"/>
+    <img src="https://github.com/rodrigososacar/process-manager/blob/master/logo/process-manager-logo.png?sanitize=true" alt="PM Logo" width="450"/>
 </div>
 
 ### Requirements 📋
