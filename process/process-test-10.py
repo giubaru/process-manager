@@ -1,1 +1,0 @@
-print('Process 10 runned succefully!')
