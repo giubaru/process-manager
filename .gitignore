@@ -1,1 +1,5 @@
 .vscode
+temp-process/
+bin/temp-dat-unittest
+process/*
+__pycache__/

@@ -57,13 +57,15 @@ class ProcessManager():
 			with open(self.__PERSISTENCE_FULLPATH, 'w') as json_file:
 				json_file.write('[]')
 	
-	def createProcess(self, process_name, file_name, description, process_path):
+	def createProcess(self, process_name, file_name, description, process_path='process'):
 		'''Mandar la informacion del obj a un json.'''
 		def __checkProcessExists(process):
 			for ps in self.__process:
 				if ps.__dict__ == process.__dict__:
 					return True
 			return False
+		if process_path == '':
+			process_path = self.PROCESS_PATH
 
 		process = Process(
 			process_name,
@@ -74,7 +76,7 @@ class ProcessManager():
 
 		if not __checkProcessExists(process):
 			with open(os.path.join(process_path, file_name), 'w') as process_file:
-				process_file.write(f'# Auto-generated process <{process_name}>\nprint("Hello!")')
+				process_file.write(f'# Auto-generated process <{process_name}>\nprint("Hello from Auto-generated process!")')
 			self.__process.append(process)
 		
 		self.save_state()
@@ -162,33 +164,38 @@ class ProcessManager():
 			print("This process can't be executed because it's running or the process doesn't exists.")
 
 if __name__ == '__main__':
-
+	print('WARNING: this project is under development and this is not a stable version.')
+	print('''\
+Commands
+	create:		Creates a new process
+	run:		Run an existing process
+	stop:		Stop a running process		
+''')
 	pm = ProcessManager()
-	# pm.createProcess('test-process-10', 'process-test-10.py', 'Testing process 10', 'process')
 
-	print(
-		pm.getProcesses()
-	)
-	#ps_test = pm.getProcesses()[0]
-	#ps_test.run()
-	#print(ps_test.pid)
-
-	pm.runProcess('test-process-10')
-	time.sleep(4)
-	pm.stopProcess('test-process-10')
-
-	# while True:
-		# action = input('prompt: ')
-		# if action == 'run':
-		# 	process_name = input('Process name: ')
-		# 	p.executeProcess(process_name)
-		# 	print(p.getRunningProcess())
-		# elif action == 'exit':
-		# 	p.stopAllRunningProcess()
-		# 	exit()
-		# elif action == 'status':
-		# 	print(p.getRunningProcess())
-		# elif action == 'stop':
-		# 	process_name = input('Process name: ')
-		# 	p.stopProcess(process_name)
-		# 	print(p.getRunningProcess())
+	try:
+		while True:
+			action = input('>>> ')
+			if action == 'run':
+				process_name = input('Process name: ')
+				pm.runProcess(process_name)
+				print([process.__dict__ for process in pm.getProcesses()]) # Just to test
+			elif action == 'create':
+				process_name = input('Process name: ')
+				pm.createProcess(
+					process_name,
+					input('Process filename: '),
+					input('Description: '),
+					input('Process path (default: process/')
+				)
+				print('Created:',pm.getProcessByName(process_name).__dict__) # Just to test
+			elif action == 'status':
+				print([process.__dict__ for process in pm.getProcesses()]) # Just to test
+			elif action == 'stop':
+				process_name = input('Process name: ')
+				pm.stopProcess(process_name)
+				print([process.__dict__ for process in pm.getProcesses()]) # Just to test
+	except KeyboardInterrupt:
+		print('See you later!')
+		exit()
+	
