@@ -1,5 +1,7 @@
 import os, json
 import psutil
+import time
+
 
 class Process():
 	def __init__(self, process_name='', file_name='', description='', process_path=''):
@@ -11,27 +13,31 @@ class Process():
 		self.pid = None
 	
 	def run(self):
-		relative_path = os.path.join(self.process_path, self.file_name)
+		relative_path = os.path.join('.',self.process_path, self.file_name)
 		ps = psutil.Popen(['python', relative_path])
 		self.pid = ps.pid
 
+	def stop(self):
+		if self.pid:
+			if psutil.pid_exists(self.pid):
+				psutil.Process(self.pid).kill()
+		self.pid = None
+
 class ProcessManager():
-	def __init__(self):
-		self.PROCESS_PATH = None
-		self.BIN_PATH = None
-		self.__PERSISTENCE_FILENAME = 'dat'
-		self.__PERSISTENCE_PATH = 'bin'
-		self.__PERSISTENCE_FULLPATH = os.path.join('.',self.__PERSISTENCE_PATH, self.__PERSISTENCE_FILENAME)
+	def __init__(self, process_path='process', persistence_path='bin', persistence_filename='dat'):
+		self.PROCESS_PATH = process_path
+		self.__PERSISTENCE_FILENAME = persistence_filename
+		self.__PERSISTENCE_PATH = persistence_path
+		self.__PERSISTENCE_FULLPATH = os.path.join('.', self.__PERSISTENCE_PATH, self.__PERSISTENCE_FILENAME)
 		self.__process = []
 		self.__running = {}
-		self.setProcessPath()
 		self.loadProcesses()
 
-	def setProcessPath(self, path='process'):
-		self.PROCESS_PATH = path
-	def setBinPath(self, path='bin'):
-		self.BIN_PATH = path
-
+	def save_state(self):
+		with open(self.__PERSISTENCE_FULLPATH, 'w') as json_file:
+			json_file.write(
+					json.dumps([data.__dict__ for data in self.__process])
+				)
 
 	def loadScripts(self):
 		# Hay que redefinirlo para que levante de algun pickle. (Levantar solo procesos registrados)
@@ -63,24 +69,39 @@ class ProcessManager():
 			process_name,
 			file_name,
 			description,
-			process_name
+			process_path
 		)
 
 		if not __checkProcessExists(process):
+			with open(os.path.join(process_path, file_name), 'w') as process_file:
+				process_file.write(f'# Auto-generated process <{process_name}>\nprint("Hello!")')
 			self.__process.append(process)
-
-		with open(self.__PERSISTENCE_FULLPATH, 'w') as json_file:
-			json_file.write(
-				json.dumps([data.__dict__ for data in self.__process])
-			)
 		
-	
+		self.save_state()
+
+	def removeProcess(self, process_name):	
+		process = self.getProcessByName(process_name)
+		self.__process.remove(process)
+		self.save_state()
+		return process.__dict__
+
 	def getProcesses(self):
 		return self.__process
 	
+	def getProcessByName(self, process_name):
+		return next((process for process in self.__process if process.process_name == process_name),None)
+	
 	def runProcess(self, process_name):
-		process = next(process for process in self.__process if process.process_name == process_name)
+		process = self.getProcessByName(process_name)
+		if not process:
+			return False
 		process.run()
+		self.save_state()
+	
+	def stopProcess(self, process_name):
+		process = self.getProcessByName(process_name)
+		process.stop()
+		self.save_state()
 
 	def executeAllProcess(self):
 		if len(self.__running) == 0:
@@ -140,36 +161,34 @@ class ProcessManager():
 		else:
 			print("This process can't be executed because it's running or the process doesn't exists.")
 
-	def stopProcess(self, process_name):
-		if self.__isRunning(process_name) and self.__processExists(process_name):
-			pid = self.__running.get(process_name)
-			self.__getProcessByPID(pid).kill()
-		else:
-			print("This process can't be executed because it's running or the process doesn't exists.")
+if __name__ == '__main__':
 
-pm = ProcessManager()
-# pm.createProcess('test-process-10', 'process-test-10.py', 'Testing process 10', 'process')
-print(
-	pm.getProcesses()
-)
-#ps_test = pm.getProcesses()[0]
-#ps_test.run()
-#print(ps_test.pid)
+	pm = ProcessManager()
+	# pm.createProcess('test-process-10', 'process-test-10.py', 'Testing process 10', 'process')
 
-pm.runProcess('test-process-10')
+	print(
+		pm.getProcesses()
+	)
+	#ps_test = pm.getProcesses()[0]
+	#ps_test.run()
+	#print(ps_test.pid)
 
-# while True:
-	# action = input('prompt: ')
-	# if action == 'run':
-	# 	process_name = input('Process name: ')
-	# 	p.executeProcess(process_name)
-	# 	print(p.getRunningProcess())
-	# elif action == 'exit':
-	# 	p.stopAllRunningProcess()
-	# 	exit()
-	# elif action == 'status':
-	# 	print(p.getRunningProcess())
-	# elif action == 'stop':
-	# 	process_name = input('Process name: ')
-	# 	p.stopProcess(process_name)
-	# 	print(p.getRunningProcess())
+	pm.runProcess('test-process-10')
+	time.sleep(4)
+	pm.stopProcess('test-process-10')
+
+	# while True:
+		# action = input('prompt: ')
+		# if action == 'run':
+		# 	process_name = input('Process name: ')
+		# 	p.executeProcess(process_name)
+		# 	print(p.getRunningProcess())
+		# elif action == 'exit':
+		# 	p.stopAllRunningProcess()
+		# 	exit()
+		# elif action == 'status':
+		# 	print(p.getRunningProcess())
+		# elif action == 'stop':
+		# 	process_name = input('Process name: ')
+		# 	p.stopProcess(process_name)
+		# 	print(p.getRunningProcess())
